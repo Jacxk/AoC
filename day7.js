@@ -1,3 +1,8 @@
+/*
+    I'm not going to document this because im tired/
+    Maybe some day in the future i will.
+ */
+
 const fs = require("fs");
 const [...input] = fs
     .readFileSync("./input.txt", "utf-8")
@@ -11,8 +16,10 @@ class Amp {
         this._next = next || null;
         this._input = 0;
         this._output = 0;
-        this._setting;
+        this._setting = 0;
+        this._pc = -1;
         this._puzzle = [...input];
+        this._phaseUsed = false;
     }
 
     get input() {
@@ -49,6 +56,15 @@ class Amp {
 
     get name() {
         return this._name;
+    }
+
+    reset() {
+        this.setting = 0;
+        this.output = 0;
+        this.input = 0;
+        this._puzzle = [...input];
+        this._pc = -1;
+        this._phaseUsed = false;
     }
 
     findOutput(setting) {
@@ -232,8 +248,8 @@ function solvePart2() {
     }
 
     function executeProgram(amp) {
-        let copy = [...amp._puzzle];
-        let directions = 0, output = -1;
+        let copy = amp._puzzle;
+        let output = -1;
         for (let i = 0; copy.length; i++) {
             let code = copy[i], codeString = String(code);
             let param1 = 0, param2 = 0, direction = code;
@@ -249,6 +265,7 @@ function solvePart2() {
                     param2 = paramModes[paramModes.length - 2] || 0;
                 }
             }
+            //console.log(amp.name,"code:",direction, i)
 
             if (direction === 1) {
                 i += 3;
@@ -264,23 +281,23 @@ function solvePart2() {
                 copy[copy[i]] = a * b;
             } else if (direction === 3) {
                 i++;
-                if (directions === 0) copy[copy[i]] = amp.setting;
-                else copy[copy[i]] = amp.input;
-                directions++;
+                //console.log("3-", amp.name, copy[copy[i]])
+                if (!amp._phaseUsed) {
+                    copy[copy[i]] = amp.setting;
+                    amp._phaseUsed = true;
+                } else copy[copy[i]] = amp.input;
+                //console.log("3-", amp.name, copy[copy[i]])
             } else if (direction === 4) {
                 i++;
-                //console.log("------")
-                //console.log(amp.name, "-", amp.input, amp.output)
                 output = param1 === 0 ? copy[copy[i]] : copy[i];
+                amp._pc = i;
                 amp.output = output;
-                amp.next.input = output;
-                //console.log(amp.name, amp.setting, "Input", amp.input, "Output", output)
-                amp.input = getEOutput(amp.next);
-                //console.log(amp.name, "-", amp.input, amp.output)
-                //console.log("amp in", amp.input)
-                // For debugging purposes. We need to check if all of them except
-                // the last one are 0's
-                // console.log(copy[copy[i]]);
+                //console.log(amp.name, amp.input, amp.output)
+                amp = amp.next;
+                //console.log("output", amp._pc+1, output)
+                amp.input = output;
+                i = amp._pc;
+                copy = amp._puzzle;
             } else if (direction === 5) {
                 i += 2;
                 let a = param1 === 0 ? copy[copy[i - 1]] : copy[i - 1],
@@ -306,7 +323,6 @@ function solvePart2() {
 
             } else if (direction === 99) break;
         }
-
         return output;
     }
 
@@ -317,8 +333,7 @@ function solvePart2() {
     const ampA = new Amp('A', ampB);
     ampE.next = ampA;
 
-    let maxAmp = ampE;
-    let maxInput = 0;
+    let maxOutput = 0;
     const possibleSequence = getPossibleSequence(5, 9);
     for (let i = 0; i < possibleSequence.length; i++) {
         const sequence = possibleSequence[i];
@@ -329,16 +344,17 @@ function solvePart2() {
         ampD.setting = sequence[3];
         ampE.setting = sequence[4];
 
-        executeProgram(ampA);
-        if (maxAmp.output > maxInput) {
-            maxAmp = ampE;
-        }
-        maxInput = Math.max(ampE.output, maxInput);
+        const output = executeProgram(ampA);
+        maxOutput = Math.max(output, maxOutput);
 
-        ampA.input = 0;
+        ampA.reset();
+        ampB.reset();
+        ampC.reset();
+        ampD.reset();
+        ampE.reset();
     }
 
-    return maxInput;
+    return maxOutput;
 }
 
 console.log(`Solution for part 1 is: ${solvePart1()}`);
