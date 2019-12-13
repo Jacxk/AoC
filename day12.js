@@ -135,7 +135,7 @@ function solvePart2() {
         return steps;
     }
 
-    return lcm(findStepsFor(0), findStepsFor(1),findStepsFor(2)) * 2;
+    return lcm(findStepsFor(0), findStepsFor(1), findStepsFor(2)) * 2;
 }
 
 console.log(`Solution for part 1 is: ${solvePart1()}`);
